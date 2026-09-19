@@ -1,18 +1,21 @@
 # VEZQORI Foundation Shell v0.1 — TASK-001 Final Report
 
-**Acceptance status:** PASS
+**Acceptance status after CORRECTION-001:** PASS
 **Project:** `/Volumes/WoodySPACE/Project/VEZQORI/GameCore`
 **Working branch:** `feature/vezqori-foundation-shell`
 **Base branch:** `foundation/vezqori-gamecore`
 **Frozen baseline:** `ed9e58f3f19295083bc52e8c1f7ccac8d06c8273`
-**Final validated runtime/source commit:** `bccfa7de797bb1625d7f920ca46739c23cfc9b37`
+**Reviewed pre-correction PR head:** `d3aa5afda0c1e302b13deb4d1dfd76f9b6bd375d`
+**Final validated correction runtime/config commit:** `db4f99a63bfb962c92b483c9c4e54f6bf64d8040`
 **Godot:** `4.7.2.stable.official.ed1daf0bf`
 
-The SHA above is the final commit that changes runtime/source behavior. This report is committed afterward as documentation only; the Draft PR `FINAL` comment records the resulting PR head SHA.
+The SHA above is the commit that changes the runtime portrait contract. This report and the curated review evidence are committed afterward as documentation/evidence only; the Draft PR correction comment records the resulting branch head SHA.
 
 ## 1. Mission Result
 
-TASK-001 replaces the generic template presentation with an initial VEZQORI mobile-first shell while preserving the accepted Maaack/Godot foundation behavior.
+TASK-001 transforms the validated generic Maaack template into an initial VEZQORI mobile application shell while preserving the accepted Godot foundation systems.
+
+CORRECTION-001 additionally locks and validates the Product Owner decision that VEZQORI is **portrait-only on phones and tablets**.
 
 Delivered visible routes:
 
@@ -20,15 +23,47 @@ Delivered visible routes:
 - Mobile-useful Settings
 - Credits and upstream attribution
 - Local/mock Home Shell
-- Home, Qori, Journey, Collection and Profile placeholder tabs
+- Home, Qori, Journey, Collection, and Profile placeholder tabs
 - VEZQORI Pause overlay
 - Return-to-Welcome confirmation
 
-No Qori gameplay/art, MiniWorld, backend, Watch, AR, marketplace, breeding, economy or Unity content was introduced.
+No Qori artwork/gameplay, MiniWorld, backend, Watch, AR, marketplace, breeding, economy, or Unity content was introduced.
 
-## 2. Architecture
+## 2. Locked Portrait-Only Product Contract
 
-The task follows the required boundary:
+The tracked product decision is:
+
+`PM_TASKS/DECISION-001_VEZQORI_PORTRAIT_ONLY.md`
+
+The contract establishes:
+
+1. Phone and tablet product layouts are portrait-only.
+2. Landscape product layouts are unsupported unless a later explicit Product Owner decision supersedes this contract.
+3. Reference viewport: `390 × 844`.
+4. Required portrait validation classes:
+   - `360 × 640`
+   - `390 × 844`
+   - `430 × 932`
+   - `768 × 1024`
+5. Required handheld orientation: `display/window/handheld/orientation=1`.
+6. Safe-area handling is mandatory.
+7. Future camera, world, HUD, and touch composition must preserve portrait framing.
+8. Desktop may use a portrait-shaped test window, but desktop landscape is not a product layout.
+9. Physical iOS/Android validation remains required before release.
+
+The runtime stretch contract is now:
+
+```ini
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=1
+```
+
+`expand` allows the logical canvas to expand to each available portrait ratio instead of retaining only the 390 × 844 ratio and producing unused bands.
+
+## 3. Architecture
+
+The implementation preserves this boundary:
 
 ```text
 Existing foundation logic
@@ -41,82 +76,85 @@ Mock/local shell state
 ### Existing foundation logic retained
 
 - `MaaacksGameTemplate` base behavior and routing helpers
-- `SceneLoader` autoload and loading screen path
+- `SceneLoader` autoload and loading-screen path
 - `PlayerConfig` / `AppSettings` persistence
 - Music controller autoload
 - UI sound controller autoload
-- Existing Pause foundation behavior
+- Pause/resume and return-to-menu foundation behavior
 - Existing opening/startup path
 - Existing MIT/license and attribution files
 
 ### Project-owned presentation shell
 
-- Semantic color, spacing, touch-size and component tokens in `scripts/vezqori/ui_tokens.gd`
+- Semantic color, spacing, touch-size, and component tokens in `scripts/vezqori/ui_tokens.gd`
 - Project-owned UI component factory in `scripts/vezqori/ui_factory.gd`
 - Safe-area and responsive margin adapter in `scripts/vezqori/safe_area_root.gd`
 - Ambient VEZQORI backdrop in `scripts/vezqori/ambient_backdrop.gd`
-- Welcome, Settings, Credits, Home and Pause wrappers under `scenes/vezqori/` and `scripts/vezqori/`
+- Welcome, Settings, Credits, Home, and Pause wrappers under `scenes/vezqori/` and `scripts/vezqori/`
 
 ### Mock/local shell state
 
-`scripts/vezqori/shell_state.gd` stores only process-local presentation state:
+`scripts/vezqori/shell_state.gd` stores process-local presentation state only:
 
 - `entry_route`: `begin` or `continue`
 - active bottom tab
 
-It does not create accounts, gameplay progression, backend state or authoritative VEZQORI data.
+It does not create gameplay progression, accounts, backend state, cloud data, economy, or authoritative VEZQORI data.
 
-## 3. Real vs Mock Behavior
+## 4. Real vs Mock Behavior
 
 | Capability | Classification | Result |
 |---|---|---|
-| Boot → Welcome routing | Real foundation behavior | Preserved through existing opening and SceneLoader path. |
-| Continue Journey route | Real local navigation | Loads Home Shell and marks `CONTINUE ROUTE • LOCAL`. |
-| Begin Journey route | Real local navigation | Loads Home Shell and marks `BEGIN ROUTE • LOCAL`. |
-| Settings navigation | Real | Welcome and Pause open the project-owned Settings route. |
-| Master volume | Real | Changes AudioServer Master bus and persists through `PlayerConfig`. |
+| Boot → Welcome | Real foundation behavior | Preserved through the existing opening and SceneLoader path. |
+| Continue Journey | Real local navigation | Loads Home and identifies `CONTINUE ROUTE • LOCAL`. |
+| Begin Journey | Real local navigation | Loads Home and identifies `BEGIN ROUTE • LOCAL`. |
+| Settings navigation | Real | Welcome and Pause can open Settings. |
+| Master volume | Real | Changes the AudioServer Master bus and persists through `PlayerConfig`. |
 | Mute | Real | Changes Master mute and persists through `PlayerConfig`. |
 | Credits | Real presentation/legal route | VEZQORI heading plus Maaack/Godot/MIT attribution retained. |
 | Pause / Resume | Real foundation behavior | Preserved and visually wrapped. |
 | Return to Welcome | Real foundation navigation | Confirmation and SceneLoader route pass. |
-| Safe-area adapter | Real layout behavior | Uses base padding and `DisplayServer.get_display_safe_area()` on mobile. |
-| Home/Qori/Journey/Collection/Profile content | Mock/local | Interactive local tabs only; explicitly marked placeholder. |
-| Qori creature/gameplay data | Not implemented | Out of scope. |
-| Backend/account/cloud sync | Not implemented | Out of scope. |
+| Portrait `expand` | Real project behavior | Effective logical canvas follows each portrait output ratio. |
+| Safe-area adapter | Real layout behavior | Base padding plus `DisplayServer.get_display_safe_area()` on mobile. |
+| Home/Qori/Journey/Collection/Profile content | Mock/local | Interactive placeholder tabs only. |
+| Qori creature/gameplay data | Not implemented | Explicitly out of scope. |
+| Backend/account/cloud sync | Not implemented | Explicitly out of scope. |
 
-## 4. Files Changed
+## 5. Files Changed
 
-Exact branch diff from `foundation/vezqori-gamecore` to validated implementation:
+TASK-001 implementation and correction-owned tracked files include:
 
 ```text
-A	PM_TASKS/TASK-001_VEZQORI_FOUNDATION_SHELL.md
-M	project.godot
-A	scenes/vezqori/credits/credits_screen.tscn
-A	scenes/vezqori/home/home_shell.tscn
-A	scenes/vezqori/pause/pause_menu.tscn
-A	scenes/vezqori/settings/settings_screen.tscn
-A	scenes/vezqori/welcome/welcome.tscn
-A	scripts/vezqori/ambient_backdrop.gd
-A	scripts/vezqori/ambient_backdrop.gd.uid
-A	scripts/vezqori/credits_screen.gd
-A	scripts/vezqori/credits_screen.gd.uid
-A	scripts/vezqori/home_shell.gd
-A	scripts/vezqori/home_shell.gd.uid
-A	scripts/vezqori/pause_shell.gd
-A	scripts/vezqori/pause_shell.gd.uid
-A	scripts/vezqori/safe_area_root.gd
-A	scripts/vezqori/safe_area_root.gd.uid
-A	scripts/vezqori/settings_screen.gd
-A	scripts/vezqori/settings_screen.gd.uid
-A	scripts/vezqori/shell_state.gd
-A	scripts/vezqori/shell_state.gd.uid
-A	scripts/vezqori/ui_factory.gd
-A	scripts/vezqori/ui_factory.gd.uid
-A	scripts/vezqori/ui_tokens.gd
-A	scripts/vezqori/ui_tokens.gd.uid
-A	scripts/vezqori/welcome_screen.gd
-A	scripts/vezqori/welcome_screen.gd.uid
+PM_TASKS/TASK-001_VEZQORI_FOUNDATION_SHELL.md
+PM_TASKS/DECISION-001_VEZQORI_PORTRAIT_ONLY.md
+project.godot
+scenes/vezqori/credits/credits_screen.tscn
+scenes/vezqori/home/home_shell.tscn
+scenes/vezqori/pause/pause_menu.tscn
+scenes/vezqori/settings/settings_screen.tscn
+scenes/vezqori/welcome/welcome.tscn
+scripts/vezqori/ambient_backdrop.gd
+scripts/vezqori/credits_screen.gd
+scripts/vezqori/home_shell.gd
+scripts/vezqori/pause_shell.gd
+scripts/vezqori/safe_area_root.gd
+scripts/vezqori/settings_screen.gd
+scripts/vezqori/shell_state.gd
+scripts/vezqori/ui_factory.gd
+scripts/vezqori/ui_tokens.gd
+scripts/vezqori/welcome_screen.gd
+artifacts/review/task-001-foundation-shell/README.md
+artifacts/review/task-001-foundation-shell/01-welcome-compact.png
+artifacts/review/task-001-foundation-shell/02-welcome-standard.png
+artifacts/review/task-001-foundation-shell/03-welcome-tall.png
+artifacts/review/task-001-foundation-shell/04-welcome-tablet.png
+artifacts/review/task-001-foundation-shell/05-settings-standard.png
+artifacts/review/task-001-foundation-shell/06-home-standard.png
+artifacts/review/task-001-foundation-shell/07-pause-standard.png
+VEZQORI_FOUNDATION_SHELL_V0_1.md
 ```
+
+Godot-generated `.uid` companions for the project-owned scripts are also tracked.
 
 ### Upstream/addon files modified
 
@@ -125,181 +163,229 @@ A	scripts/vezqori/welcome_screen.gd.uid
 Audit result:
 
 - addon diff count: `0`
-- files outside allowed TASK-001 paths: `0`
-- no files outside GameCore modified by this worker task
+- no file outside GameCore was modified
+- the only existing runtime/config file modified is `project.godot`
 
-The only existing project file modified is `project.godot`, for VEZQORI identity, responsive default viewport settings and project-owned Welcome/Home route paths.
+## 6. Portrait `expand`, Safe-Area, and No-Bars Results
 
-Documentation added after the validated runtime/source commits:
+The four actual GUI viewport classes passed a deterministic layout-contract probe after a clean import.
 
-- `VEZQORI_FOUNDATION_SHELL_V0_1.md` — this final tracked report
+| Physical game-content viewport | Effective logical canvas | Aspect result | Layout result |
+|---:|---:|---|---|
+| 360 × 640 | 474 × 844 | Ratio delta `0.0008886` | PASS — expanded logical width, actions reachable, compact pause in bounds |
+| 390 × 844 | 390 × 844 | Ratio delta `0` | PASS — reference viewport |
+| 430 × 932 | 390 × 845 | Ratio delta `0.0001651` | PASS — tall logical height expands without broken anchoring |
+| 768 × 1024 | 633 × 844 | Ratio delta `0` | PASS — expanded logical width with bounded content |
 
-## 5. Responsive / Safe-Area Result
+### Safe-area results
 
-The shell uses anchors, VBox/HBox/Grid/Scroll/Center/Margin containers, size flags and semantic minimum touch sizes instead of one-resolution absolute layout. Decorative drawing is the only intentionally positioned visual element.
+| Class | Safe-area logical rect | Base margins | Result |
+|---|---:|---:|---|
+| Compact | 474 × 844 | 20 each side | PASS |
+| Standard | 390 × 844 | 20 each side | PASS |
+| Tall | 390 × 845 | 20 each side | PASS |
+| Tablet | 633 × 844 | 32 left/right, 20 top/bottom | PASS |
 
-| Validation class | Runtime result | Evidence |
-|---|---|---|
-| 360×640 compact phone | PASS | All required Welcome actions recognized; decorative hero is reduced/hidden to preserve action access. `01-welcome-compact.png` |
-| 390×844 standard phone | PASS | Full Welcome hierarchy and actions visible. `02-welcome-standard.png` |
-| 430×932 tall phone | PASS | Anchoring and spacing remain coherent. `03-welcome-tall.png` |
-| 768×1024 tablet portrait | PASS | Content remains centered and bounded rather than simply stretched. `04-welcome-tablet.png` |
+All Welcome actions remained visible and inside the effective logical viewport.
 
-Runtime captures include the macOS debug title-bar area; game-content dimensions are the requested viewport classes.
+### Bottom navigation
 
-## 6. Manual Flow Result
+At every viewport:
+
+- Home visible/touchable
+- Qori visible/touchable
+- Journey visible/touchable
+- Collection visible/touchable
+- Profile visible/touchable
+- each tab remained inside the effective logical viewport
+- each tab had at least a 48-pixel logical height
+
+### Compact Settings and Pause
+
+At 360 × 640:
+
+- Settings vertical scrolling passed; scroll position changed and the bottom `MOCK / LOCAL ONLY` marker became reachable.
+- Pause rendered at logical `320 × 348`, remained fully inside the effective `474 × 844` logical canvas, and exposed Resume, Settings, and Return to Welcome.
+
+### Tablet bounding
+
+At 768 × 1024:
+
+- effective logical canvas: `633 × 844`
+- main content width: `569`
+- logical left/right gap: `32` / `32`
+- result: centered and bounded rather than stretched edge-to-edge
+
+### Letterbox / pillarbox result
+
+The seven committed actual-runtime PNGs were analyzed at all four outer edges.
+
+- exact-black edge ratio: `0.0`
+- near-black edge ratio: `0.0`
+- result: **PASS — no unintended letterbox or pillarbox band detected**
+
+## 7. Manual Flow Result
+
+The full flow was rerun in a normal 390 × 844 GUI runtime with an isolated `HOME` under `.local-setup-logs/correction-001-portrait/`.
 
 | Step | Result |
 |---|---|
 | Boot normal project | PASS |
-| Welcome appears | PASS |
-| Settings opens | PASS |
-| Master volume changes | PASS (`1.0` → `0.8`) |
-| Back to Welcome | PASS |
-| Credits opens | PASS |
-| Back from Credits | PASS |
-| Begin Journey | PASS |
-| Home Shell loads | PASS |
+| VEZQORI Welcome appears | PASS |
+| Open Settings | PASS |
+| Change Master volume | PASS (`1.0` → `0.85`) |
+| Mute restored to Off | PASS |
+| Return to Welcome | PASS |
+| Open Credits | PASS |
+| Maaack/Godot/MIT attribution visible | PASS |
+| Return from Credits | PASS |
+| Select Begin Journey | PASS |
+| Home Shell loads | PASS (`BEGIN ROUTE • LOCAL`) |
 | Home tab | PASS |
 | Qori tab | PASS |
 | Journey tab | PASS |
 | Collection tab | PASS |
 | Profile tab | PASS |
-| Pause opens | PASS |
+| Open Pause | PASS |
+| Open Settings from Pause and Back | PASS |
 | Resume | PASS |
 | Return confirmation | PASS (`Stay` / `Return`) |
 | Return to Welcome | PASS |
-| Native Command-Q exit | PASS |
+| Native Cmd-Q exit | PASS |
 | Relaunch same user-data sandbox | PASS |
-| Master volume persists | PASS (`Master=0.8`, UI `80%`) |
+| Master volume persists | PASS (`Master=0.85`, UI `85%`) |
 
-Detailed actual-runtime results:
+Detailed ignored runtime evidence:
 
-`.local-setup-logs/task-001-foundation-shell/manual-flow-results.md`
+`.local-setup-logs/correction-001-portrait/manual-flow-results.md`
 
-## 7. Persistence Result
+## 8. Persistence Result
 
-Acceptance user data was isolated under GameCore:
+Correction acceptance user data was isolated at:
 
-`.local-setup-logs/task-001-foundation-shell/manual-flow-home/Library/Application Support/Godot/app_userdata/VEZQORI/player_config.cfg`
+`.local-setup-logs/correction-001-portrait/manual/home/Library/Application Support/Godot/app_userdata/VEZQORI/player_config.cfg`
 
-Persisted value after quit/relaunch:
+Persisted result after quit and relaunch:
 
 ```ini
 [AudioSettings]
-Master=0.8
+Mute=false
+Master=0.85
 ```
 
-`11-relaunch-persistence.png` shows the relaunched Settings UI at `80%`.
+The relaunched Settings screen displayed `85%` and `Mute all audio: Off`.
 
-## 8. Screenshot Evidence
+## 9. PM-Reviewable Screenshot Evidence
 
-Evidence root:
+Tracked review root:
 
-`.local-setup-logs/task-001-foundation-shell/`
+`artifacts/review/task-001-foundation-shell/`
 
-```text
-TASK-001 Screenshot Manifest
+| File | Exact game-content size | Purpose |
+|---|---:|---|
+| `01-welcome-compact.png` | 360 × 640 | Compact portrait Welcome |
+| `02-welcome-standard.png` | 390 × 844 | Reference portrait Welcome |
+| `03-welcome-tall.png` | 430 × 932 | Tall portrait Welcome |
+| `04-welcome-tablet.png` | 768 × 1024 | Tablet portrait Welcome |
+| `05-settings-standard.png` | 390 × 844 | Real persistent Settings state |
+| `06-home-standard.png` | 390 × 844 | Home and five-tab navigation |
+| `07-pause-standard.png` | 390 × 844 | Pause overlay |
 
-01-welcome-compact.png | 360x704 | sha256 9a950a8f29b3832e616029426271fd78b6628897bd8916f72316a43bd7ae8207
-02-welcome-standard.png | 390x908 | sha256 c0e1fac1245ed419a8eaa9fa2aeac5ccd8a2afc7b778125f5893b0ea292803d9
-03-welcome-tall.png | 430x996 | sha256 680dcb7794ce4d2f9462b9acb84a46fab8b8933e439732c2f88e503464735dce
-04-welcome-tablet.png | 768x1088 | sha256 75fa1b25326cdeff2655c7e7318b3273390acd136375ac7bc3e1d25a8f52cc86
-05-settings.png | 390x908 | sha256 64ff6801f4cc7fbb251a35b38f0783d4a8af92e3be09d35fb12434fc5a2f9681
-06-credits.png | 390x908 | sha256 d749db33e9e4aee55d8e4f9112aaaebe40c4ea2a7e32ebe5d27b9805ba95f398
-07-home-shell.png | 390x908 | sha256 1529aa14dcad0243fa5617255dec4d018aeb1c9fa49aefb82369af311cb25e7c
-08-bottom-nav-qori.png | 390x908 | sha256 e3685a76daab43f3a5ceaa17995af192bb77acae31b9294d2f916194c585683a
-09-bottom-nav-journey.png | 390x908 | sha256 b62173d013824532a58dae6b493ecfb2679b713e4553c2fc172a7ef6ef13a18e
-10-pause.png | 390x908 | sha256 8d2a75b41ec361cd436d41f3c85e41bd5bfa2b8b4ba1144b3e5727413f587417
-11-relaunch-persistence.png | 390x908 | sha256 29142ae1c354909a5c0200eabb02ee48cdb274b59a85c1ce335d677d7f530f87
-```
+These are actual Godot runtime window captures. The macOS title bar is excluded. Full provenance, dimensions, limitations, gallery links, and SHA-256 values are in:
 
-Additional diagnostic captures include Collection/Profile checks, Continue-route proof, Resume proof, Return confirmation and Return-to-Welcome proof.
+`artifacts/review/task-001-foundation-shell/README.md`
 
-## 9. Automated Validation Results
+Full logs and uncurated diagnostics remain ignored under:
+
+`.local-setup-logs/correction-001-portrait/`
+
+## 10. Automated Validation Results
 
 | Gate | Result |
 |---|---|
-| Clean Godot import | PASS — 0 parser/resource errors, 0 warnings |
-| Raw headless startup | PASS — exit 0, 0 parser/script/resource errors |
-| Scene matrix | PASS — Welcome, Settings, Credits and Home each 0 errors / 0 warnings |
+| Clean `.godot` import | PASS — exit 0; 0 parser/resource errors; 0 warnings |
+| Raw headless startup | PASS — exit 0; 0 parser/script/resource errors |
+| Scene matrix | PASS — Welcome, Settings, Credits, Home: 0 errors / 0 warnings |
 | Full resource scan | PASS — 275 checked / 0 failed |
-| Pause focus probe | PASS — Resume → Settings → Return, confirmation visible, text `Return` |
-| Actual GUI launch | PASS |
-| Actual manual flow | PASS |
-| Viewport runtime matrix | PASS — all four classes |
+| Normal GUI boot | PASS — no live errors or warnings before exit |
+| Four actual-GUI portrait contract probes | PASS — 0 failures for every class |
+| No-bars image analysis | PASS — all seven curated captures |
+| Complete actual-runtime manual flow | PASS |
+| Volume persistence | PASS |
+| Compact Settings scroll | PASS |
+| Compact Pause bounds | PASS |
+| Five-tab visibility/touchability | PASS at all classes |
+| Tablet centered/bounded composition | PASS |
 | Addon modification audit | PASS — 0 addon files modified |
-| Working-tree pre-report check | PASS — clean |
 
-Validation logs:
+Correction logs:
 
-- `.local-setup-logs/task-001-foundation-shell/final-validation/import.log`
-- `.local-setup-logs/task-001-foundation-shell/final-validation/headless-main.log`
-- `.local-setup-logs/task-001-foundation-shell/final-validation/scene-matrix.txt`
-- `.local-setup-logs/task-001-foundation-shell/final-validation/resource-scan.log`
-- `.local-setup-logs/task-001-foundation-shell/final-validation/pause-focus.log`
-- `.local-setup-logs/task-001-foundation-shell/gui-runtime.log`
-- `.local-setup-logs/task-001-foundation-shell/pause-final-runtime.log`
-- `.local-setup-logs/task-001-foundation-shell/persistence-relaunch.log`
+- `.local-setup-logs/correction-001-portrait/final-validation/import.log`
+- `.local-setup-logs/correction-001-portrait/final-validation/headless-main.log`
+- `.local-setup-logs/correction-001-portrait/final-validation/scene-matrix.txt`
+- `.local-setup-logs/correction-001-portrait/final-validation/resource-scan.log`
+- `.local-setup-logs/correction-001-portrait/final-validation/viewport-contract-summary.txt`
+- `.local-setup-logs/correction-001-portrait/final-validation/curated-edge-analysis.json`
+- `.local-setup-logs/correction-001-portrait/final-validation/gui-normal.log`
+- `.local-setup-logs/correction-001-portrait/manual/gui-flow.log`
+- `.local-setup-logs/correction-001-portrait/manual/gui-relaunch.log`
 
-## 10. Warnings / Errors
+## 11. Warnings / Errors
 
-### Final parser, script, missing-resource and live-runtime errors
+### Live parser, script, missing-resource, GUI, and navigation errors
 
-**None.**
-
-All defects found during implementation were corrected before validation, including dynamic unique-name ownership, Home content sizing, compact Welcome hierarchy and Pause confirmation reparent/focus behavior.
+**None in the final correction validation.**
 
 ### Shutdown-only ObjectDB diagnostics
 
-Godot 4.7.2 reports anonymous `RefCounted` shutdown diagnostics:
+Godot 4.7.2 reported anonymous shutdown-only diagnostics after otherwise successful processes:
 
-- imported frozen baseline normal quit: 1 leaked instance
-- current Welcome normal quit: 4 leaked instances
-- current Home after full navigation normal quit: 6 leaked instances
-- raw forced headless `--quit-after`: 4 leaked instances
+- raw forced headless `--quit-after`: 4 ObjectDB instances
+- full manual flow normal quit: 6 ObjectDB instances
+- final normal Welcome GUI quit: 4 ObjectDB instances
 
-Verbose output identifies only anonymous `RefCounted` objects with reference count 0 and no source path. No associated runtime, parser, resource or interaction failure occurs before process shutdown.
+No parser, script, missing-resource, route, visual, or interaction failure occurred before shutdown.
 
-### Scanner-only diagnostics
+### Scanner-only cleanup diagnostics
 
-The exhaustive scanner reports:
+The exhaustive scanner first reported:
 
-- `RESOURCE_SCAN checked=275 failed=0`
-- then scanner-process cleanup reports 21 ObjectDB instances and 10 resources still in use
+`RESOURCE_SCAN checked=275 failed=0`
 
-These diagnostics occur after the scanner intentionally loads the full resource graph in one process. The clean import and all live runtime paths do not report missing/broken resources.
+Its cleanup then reported:
 
-### Serena/GDScript LSP limitation
+- 21 ObjectDB instances
+- 10 resources still in use
 
-Serena's GDScript LSP endpoint at `127.0.0.1:6008` was unavailable during the task. Source changes therefore used deterministic repository writes, and correctness was established through Godot 4.7.2 import, headless, resource, GUI and manual-runtime validation. This did not block the task.
+These occur after intentionally loading the entire resource graph in one scanner process. They are not hidden and are distinct from live runtime failures.
 
-## 11. Unresolved Limitations
+## 12. Unresolved Limitations
 
-Non-blocking limitations intentionally retained:
+Non-blocking limitations retained for PM review:
 
-1. No iOS/Android export or physical-device notch test was performed; safe-area API handling and responsive runtime viewports were validated on macOS.
-2. Home/Qori/Journey/Collection/Profile are explicitly local placeholders, not production systems.
-3. The preserved opening sequence still uses the foundation's existing Godot-engine splash asset before VEZQORI Welcome.
-4. Desktop Quit is intentionally hidden below 900px viewport width; desktop developers retain native window/Command-Q exit.
-5. Shutdown-only anonymous RefCounted diagnostics remain as described above.
-6. No Qori, MiniWorld, backend, Watch, AR, marketplace, breeding or economy integration is present.
+1. No iOS/Android export or physical-device notch/safe-area test was performed; physical-device validation remains required before release.
+2. Home, Qori, Journey, Collection, and Profile content remains explicitly local/mock placeholder content.
+3. The preserved opening sequence still uses the existing foundation Godot splash before VEZQORI Welcome.
+4. Final licensed VEZQORI typography has not been supplied; the shell uses project/system typography.
+5. Desktop Quit remains unobtrusive/hidden at phone and tablet widths; desktop developers retain native Cmd-Q.
+6. Shutdown-only diagnostics remain as documented above.
+7. No Qori, MiniWorld, backend, Watch, AR, marketplace, breeding, or economy integration exists.
 
-No limitation above blocks visual review of Foundation Shell v0.1.
+No limitation above blocks PM visual review of Foundation Shell v0.1.
 
-## 12. Exact Validation Commands
+## 13. Exact Validation Commands
 
 Run from:
 
 `/Volumes/WoodySPACE/Project/VEZQORI/GameCore`
 
-### Identity and scope
+### Identity and portrait settings
 
 ```sh
 git branch --show-current
 git rev-parse HEAD
 git status --short --branch
-git diff --name-only foundation/vezqori-gamecore...HEAD -- addons
+grep -n -A10 -B2 '^\[display\]' project.godot
 ```
 
 ### Clean import
@@ -312,51 +398,73 @@ rm -rf .godot
 ### Raw headless startup
 
 ```sh
-/opt/homebrew/bin/godot --headless --path . --quit-after 240
+/opt/homebrew/bin/godot --headless --path . --quit-after 120
 ```
 
 ### Scene matrix
 
 ```sh
-/opt/homebrew/bin/godot --headless --resolution 390x844 --path .   --scene res://scenes/vezqori/welcome/welcome.tscn --quit-after 90
-/opt/homebrew/bin/godot --headless --resolution 390x844 --path .   --scene res://scenes/vezqori/settings/settings_screen.tscn --quit-after 90
-/opt/homebrew/bin/godot --headless --resolution 390x844 --path .   --scene res://scenes/vezqori/credits/credits_screen.tscn --quit-after 90
-/opt/homebrew/bin/godot --headless --resolution 390x844 --path .   --scene res://scenes/vezqori/home/home_shell.tscn --quit-after 90
+/opt/homebrew/bin/godot --headless --path . --scene res://scenes/vezqori/welcome/welcome.tscn --quit-after 120
+/opt/homebrew/bin/godot --headless --path . --scene res://scenes/vezqori/settings/settings_screen.tscn --quit-after 120
+/opt/homebrew/bin/godot --headless --path . --scene res://scenes/vezqori/credits/credits_screen.tscn --quit-after 120
+/opt/homebrew/bin/godot --headless --path . --scene res://scenes/vezqori/home/home_shell.tscn --quit-after 120
 ```
 
-### Full resource scanner
+### Full resource scan
 
 ```sh
-/opt/homebrew/bin/godot --headless --path .   --script "$PWD/.local-setup-logs/task-001-foundation-shell/final-validation/resource_scan.gd"
+/opt/homebrew/bin/godot --headless --path . \
+  --script "$PWD/.local-setup-logs/correction-001-portrait/final-validation/resource_scan.gd"
 ```
 
-### Pause focus/confirmation probe
+### Four actual-GUI portrait classes
 
 ```sh
-/opt/homebrew/bin/godot --headless --resolution 390x844 --path .   --script "$PWD/.local-setup-logs/task-001-foundation-shell/pause_focus_probe.gd"
+/opt/homebrew/bin/godot --windowed --screen 0 --resolution 360x640 --path . --scene res://scenes/vezqori/welcome/welcome.tscn
+/opt/homebrew/bin/godot --windowed --screen 0 --resolution 390x844 --path . --scene res://scenes/vezqori/welcome/welcome.tscn
+/opt/homebrew/bin/godot --windowed --screen 0 --resolution 430x932 --path . --scene res://scenes/vezqori/welcome/welcome.tscn
+/opt/homebrew/bin/godot --windowed --screen 0 --resolution 768x1024 --path . --scene res://scenes/vezqori/welcome/welcome.tscn
 ```
 
-### Actual GUI viewport validation
+### Automated GUI layout contract at each portrait class
 
 ```sh
-/opt/homebrew/bin/godot --windowed --screen 0 --resolution 360x640 --path .   --scene res://scenes/vezqori/welcome/welcome.tscn
-/opt/homebrew/bin/godot --windowed --screen 0 --resolution 390x844 --path .   --scene res://scenes/vezqori/welcome/welcome.tscn
-/opt/homebrew/bin/godot --windowed --screen 0 --resolution 430x932 --path .   --scene res://scenes/vezqori/welcome/welcome.tscn
-/opt/homebrew/bin/godot --windowed --screen 0 --resolution 768x1024 --path .   --scene res://scenes/vezqori/welcome/welcome.tscn
+HOME="$PWD/.local-setup-logs/correction-001-portrait/final-validation/home-360x640" \
+  /opt/homebrew/bin/godot --windowed --screen 0 --resolution 360x640 --path . \
+  --script "$PWD/.local-setup-logs/correction-001-portrait/layout_contract_probe.gd"
 ```
 
-### Normal project/manual persistence run
+The same command was repeated for `390x844`, `430x932`, and `768x1024`.
+
+### Normal full-project manual/persistence run
 
 ```sh
-ACC=.local-setup-logs/task-001-foundation-shell
-HOME="$PWD/$ACC/manual-flow-home"   /opt/homebrew/bin/godot --windowed --screen 0 --resolution 390x844 --path .
+ACC=.local-setup-logs/correction-001-portrait
+HOME="$PWD/$ACC/manual/home" \
+  /opt/homebrew/bin/godot --windowed --screen 0 --resolution 390x844 --path .
 ```
 
-## 13. Git / PR State
+### Curated no-bars analysis
+
+```sh
+python3 .local-setup-logs/correction-001-portrait/helpers/edge_analysis.py \
+  artifacts/review/task-001-foundation-shell/01-welcome-compact.png \
+  artifacts/review/task-001-foundation-shell/02-welcome-standard.png \
+  artifacts/review/task-001-foundation-shell/03-welcome-tall.png \
+  artifacts/review/task-001-foundation-shell/04-welcome-tablet.png \
+  artifacts/review/task-001-foundation-shell/05-settings-standard.png \
+  artifacts/review/task-001-foundation-shell/06-home-standard.png \
+  artifacts/review/task-001-foundation-shell/07-pause-standard.png
+```
+
+## 14. Git / PR State
 
 - Draft PR: `woody-worakorn/Godot-Game-Template#1`
 - Task packet commit: `3e70f477c799f82b2dd58d92ff5a2d39c624122c`
 - Main implementation commit: `3fd7f1b45ea706db1d055905490af59fede498c9`
-- Pause accessibility/mobile fix: `bccfa7de797bb1625d7f920ca46739c23cfc9b37`
+- Pause/mobile navigation fix: `bccfa7de797bb1625d7f920ca46739c23cfc9b37`
+- Original TASK-001 report commit: `d3aa5afda0c1e302b13deb4d1dfd76f9b6bd375d`
+- CORRECTION-001 portrait runtime/config commit: `db4f99a63bfb962c92b483c9c4e54f6bf64d8040`
+- Branch remains `feature/vezqori-foundation-shell`.
 - PR remains Draft.
 - No merge performed.
